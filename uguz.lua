@@ -1,28 +1,37 @@
---========================================================--
---                   UGUZHUB V3 - LOAD
---========================================================--
+    UguzHub V3 - ROBLOX LUAU SCRIPT
+    MM2 / GAME UTILITY - FULL INTEGRATED SCRIPT
+--]]
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 ------------------------------------------------------------
--- 1) ANIMASYONLU GİRİŞ EKRANI (INTRO UI)
+-- THEME & CONFIGURATION
 ------------------------------------------------------------
 local Theme = {
-    Background = Color3.fromRGB(16, 16, 22),
+    Background = Color3.fromRGB(15, 15, 22),
+    Sidebar    = Color3.fromRGB(22, 22, 32),
+    Card       = Color3.fromRGB(30, 30, 42),
     Accent     = Color3.fromRGB(138, 92, 255),
     AccentSoft = Color3.fromRGB(90, 60, 180),
-    Cyan       = Color3.fromRGB(60, 200, 220),
-    Text       = Color3.fromRGB(235, 235, 245),
-    SubText    = Color3.fromRGB(165, 165, 180),
-    Stroke     = Color3.fromRGB(55, 55, 70),
+    Blue       = Color3.fromRGB(41, 121, 255),
+    Text       = Color3.fromRGB(240, 240, 250),
+    SubText    = Color3.fromRGB(160, 160, 180),
+    Stroke     = Color3.fromRGB(50, 50, 70),
+    Red        = Color3.fromRGB(235, 60, 60),
+    Green      = Color3.fromRGB(60, 235, 120),
 }
 
+------------------------------------------------------------
+-- UI HELPER FUNCTIONS
+------------------------------------------------------------
 local function create(class, props, children)
     local inst = Instance.new(class)
     for prop, value in pairs(props or {}) do
@@ -35,666 +44,838 @@ local function create(class, props, children)
 end
 
 local function corner(radius)
-    return create("UICorner", { CornerRadius = UDim.new(0, radius or 16) })
+    return create("UICorner", { CornerRadius = UDim.new(0, radius or 12) })
 end
 
 local function stroke(color, thickness)
     return create("UIStroke", {
         Color = color or Theme.Stroke,
         Thickness = thickness or 1,
-        Transparency = 0.4,
+        Transparency = 0.3,
     })
 end
 
 local function tween(obj, props, duration, style, direction)
-    local info = TweenInfo.new(
-        duration or 0.3,
-        style or Enum.EasingStyle.Quint,
-        direction or Enum.EasingDirection.Out
-    )
+    local info = TweenInfo.new(duration or 0.3, style or Enum.EasingStyle.Quint, direction or Enum.EasingDirection.Out)
     local t = TweenService:Create(obj, info, props)
     t:Play()
     return t
 end
 
-local IntroScreenGui = create("ScreenGui", {
-    Name = "UguzHubV3_Intro",
+------------------------------------------------------------
+-- ROOT GUI CONTAINER
+------------------------------------------------------------
+local ScreenGui = create("ScreenGui", {
+    Name = "UguzHubV3_Main",
     ResetOnSpawn = false,
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-    DisplayOrder = 999,
+    DisplayOrder = 100,
     IgnoreGuiInset = true,
 })
-IntroScreenGui.Parent = PlayerGui
 
+local function getGuiContainer()
+    local success, _ = pcall(function()
+        ScreenGui.Parent = CoreGui
+    end)
+    if not success then
+        ScreenGui.Parent = PlayerGui
+    end
+end
+getGuiContainer()
+
+------------------------------------------------------------
+-- SCREEN 1: INTRO ANIMATION (4 SECONDS)
+------------------------------------------------------------
 local IntroFrame = create("Frame", {
-    Name = "Intro",
+    Name = "IntroFrame",
     Size = UDim2.fromScale(1, 1),
     Position = UDim2.fromScale(0, 0),
-    BorderSizePixel = 0,
     BackgroundColor3 = Theme.Background,
-    BackgroundTransparency = 0,
-    ZIndex = 10,
+    ZIndex = 50,
 })
-IntroFrame.Parent = IntroScreenGui
+IntroFrame.Parent = ScreenGui
 
-local IntroContent = create("Frame", {
-    Name = "IntroContent",
-    AnchorPoint = Vector2.new(0.5, 0),
-    Position = UDim2.new(0.5, 0, 0.20, 0),
-    Size = UDim2.new(0, 520, 0, 360),
+local IntroContainer = create("Frame", {
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.new(0, 320, 0, 180),
     BackgroundTransparency = 1,
-    ZIndex = 11,
+    ZIndex = 51,
 })
-IntroContent.Parent = IntroFrame
+IntroContainer.Parent = IntroFrame
 
-local LogoLabel = create("TextLabel", {
+local TitleLabel = create("TextLabel", {
     Text = "UguzHub",
     Font = Enum.Font.GothamBlack,
-    TextSize = 50,
+    TextSize = 46,
     TextColor3 = Theme.Text,
     BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 60),
-    Position = UDim2.new(0, 0, 0, 0),
+    Size = UDim2.new(1, 0, 0, 50),
     TextTransparency = 1,
-    ZIndex = 11,
+    ZIndex = 52,
 })
-LogoLabel.Parent = IntroContent
+TitleLabel.Parent = IntroContainer
 
-local ProTag = create("TextLabel", {
+local VersionTag = create("TextLabel", {
     Text = "V3",
     Font = Enum.Font.GothamBold,
-    TextSize = 18,
+    TextSize = 22,
     TextColor3 = Theme.Accent,
     BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 22),
-    Position = UDim2.new(0, 0, 0, 58),
+    Position = UDim2.new(0, 0, 0, 50),
+    Size = UDim2.new(1, 0, 0, 30),
     TextTransparency = 1,
-    ZIndex = 11,
+    ZIndex = 52,
 })
-ProTag.Parent = IntroContent
+VersionTag.Parent = IntroContainer
 
-local Underline = create("Frame", {
-    Name = "Underline",
-    Size = UDim2.new(0, 0, 0, 3),
-    Position = UDim2.new(0.5, 0, 0, 88),
+local AnimatedBar = create("Frame", {
+    Size = UDim2.new(0, 0, 0, 4),
+    Position = UDim2.new(0.5, 0, 0, 90),
     AnchorPoint = Vector2.new(0.5, 0),
     BackgroundColor3 = Theme.Accent,
     BorderSizePixel = 0,
-    ZIndex = 11,
+    ZIndex = 52,
 })
-corner(2).Parent = Underline
-Underline.Parent = IntroContent
+corner(2).Parent = AnimatedBar
+AnimatedBar.Parent = IntroContainer
 
-local LoadingLabel = create("TextLabel", {
-    Text = "Loading",
-    Font = Enum.Font.GothamMedium,
-    TextSize = 20,
-    TextColor3 = Theme.SubText,
+------------------------------------------------------------
+-- SCREEN 2: EXECUTOR WARNING (10 SECONDS)
+------------------------------------------------------------
+local WarningFrame = create("Frame", {
+    Name = "WarningFrame",
+    Size = UDim2.fromScale(1, 1),
+    Position = UDim2.fromScale(0, 0),
+    BackgroundColor3 = Theme.Background,
     BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 30),
-    Position = UDim2.new(0, 0, 0, 112),
-    TextTransparency = 1,
-    ZIndex = 11,
-})
-LoadingLabel.Parent = IntroContent
-
--- RESMİ TR / EN UYARI METNİ
-local DisclaimerLabel = create("TextLabel", {
-    Text = "DEĞERLİ KULLANICILARIMIZIN DİKKATİNE:\nSizlere daha kaliteli, kesintisiz ve güvenli bir hizmet sunabilmek adına titizlikle çalışmaktayız. Scriptin tüm fonksiyonlarının sorunsuz çalışması için lütfen kullandığınız executor uygulamasının ayarlarından tüm güvenlik izinlerini kapattığınızdan emin olunuz.\n\n----------------------------------------\n\nNOTICE TO OUR VALUED USERS:\nWe are dedicated to providing you with a higher quality, seamless, and secure service. To ensure all script functions operate correctly, please verify that all security permissions within your executor settings are completely disabled.",
-    Font = Enum.Font.GothamMedium,
-    TextSize = 13,
-    TextColor3 = Theme.SubText,
-    BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 180),
-    Position = UDim2.new(0, 0, 0, 100),
-    TextTransparency = 1,
-    TextWrapped = true,
     Visible = false,
-    ZIndex = 11,
+    ZIndex = 40,
 })
-DisclaimerLabel.Parent = IntroContent
+WarningFrame.Parent = ScreenGui
 
-local ContinueButton = create("TextButton", {
-    Name = "ContinueButton",
-    Text = "Continue (10)",
+local WarningBox = create("Frame", {
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.new(0, 480, 0, 220),
+    BackgroundColor3 = Theme.Sidebar,
+    ZIndex = 41,
+})
+corner(16).Parent = WarningBox
+stroke(Theme.Red, 1.5).Parent = WarningBox
+WarningBox.Parent = WarningFrame
+
+local WarningTextTR = create("TextLabel", {
+    Text = "Execuetor Ayarlarindaki Tum Herseyi Kapattığınızda Emin Olun Lütfen",
     Font = Enum.Font.GothamBold,
-    TextSize = 17,
-    TextColor3 = Theme.SubText,
-    AutoButtonColor = false,
-    BackgroundColor3 = Color3.fromRGB(24, 22, 34),
+    TextSize = 15,
+    TextColor3 = Theme.Text,
     BackgroundTransparency = 1,
-    Size = UDim2.new(0, 220, 0, 50),
-    Position = UDim2.new(0.5, 0, 0, 290),
+    Position = UDim2.new(0, 15, 0, 20),
+    Size = UDim2.new(1, -30, 0, 40),
+    TextWrapped = true,
+    ZIndex = 42,
+})
+WarningTextTR.Parent = WarningBox
+
+local DividerLine = create("Frame", {
+    Size = UDim2.new(0.85, 0, 0, 2),
+    Position = UDim2.new(0.5, 0, 0, 75),
     AnchorPoint = Vector2.new(0.5, 0),
-    Active = false,
-    Visible = false,
-    ZIndex = 11,
+    BackgroundColor3 = Theme.Stroke,
+    BorderSizePixel = 0,
+    ZIndex = 42,
 })
-corner(12).Parent = ContinueButton
-local ContinueStroke = stroke(Theme.SubText, 1.5)
-ContinueStroke.Parent = ContinueButton
-ContinueButton.Parent = IntroContent
+DividerLine.Parent = WarningBox
 
-local IntroFinished = Instance.new("BindableEvent")
+local WarningTextEN = create("TextLabel", {
+    Text = "Please Make Sure You Turn Off Everything In The Executor Settings",
+    Font = Enum.Font.GothamMedium,
+    TextSize = 14,
+    TextColor3 = Theme.SubText,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0, 15, 0, 85),
+    Size = UDim2.new(1, -30, 0, 40),
+    TextWrapped = true,
+    ZIndex = 42,
+})
+WarningTextEN.Parent = WarningBox
 
-ContinueButton.MouseButton1Click:Connect(function()
-    if not ContinueButton.Active then return end
-    ContinueButton.Active = false
-    IntroFinished:Fire()
-end)
-
-local function activateContinueButton()
-    ContinueButton.Active = true
-    ContinueButton.Text = "Continue"
-    tween(ContinueButton, {
-        TextColor3 = Theme.Text,
-        BackgroundColor3 = Color3.fromRGB(30, 24, 48),
-    }, 0.4)
-    tween(ContinueStroke, { Color = Theme.Cyan, Transparency = 0 }, 0.4)
-
-    task.spawn(function()
-        while ContinueButton.Active do
-            tween(ContinueStroke, { Transparency = 0.55 }, 0.9, Enum.EasingStyle.Sine)
-            task.wait(0.9)
-            if not ContinueButton.Active then break end
-            tween(ContinueStroke, { Transparency = 0 }, 0.9, Enum.EasingStyle.Sine)
-            task.wait(0.9)
-        end
-    end)
-end
-
-local function startCountdown()
-    task.spawn(function()
-        for i = 10, 1, -1 do
-            ContinueButton.Text = "Continue (" .. i .. ")"
-            task.wait(1)
-        end
-        activateContinueButton()
-    end)
-end
-
--- ANIMASYON BAŞLANGICI
-task.spawn(function()
-    tween(LogoLabel, { TextTransparency = 0 }, 0.6)
-    tween(ProTag, { TextTransparency = 0 }, 0.6)
-    task.wait(0.15)
-
-    tween(Underline, { Size = UDim2.new(0, 220, 0, 3) }, 0.6, Enum.EasingStyle.Quart)
-    task.wait(0.2)
-
-    tween(LoadingLabel, { TextTransparency = 0 }, 0.4)
-
-    local dotsRunning = true
-    task.spawn(function()
-        local states = { "Loading", "Loading.", "Loading..", "Loading..." }
-        local i = 1
-        while dotsRunning do
-            LoadingLabel.Text = states[i]
-            i = (i % #states) + 1
-            task.wait(0.35)
-        end
-    end)
-
-    task.wait(3.5)
-    dotsRunning = false
-
-    tween(LoadingLabel, { TextTransparency = 1 }, 0.3)
-    task.wait(0.3)
-    LoadingLabel.Visible = false
-
-    tween(LogoLabel, { Position = UDim2.new(0, 0, 0, -50), TextTransparency = 1 }, 0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-    tween(ProTag, { Position = UDim2.new(0, 0, 0, 8), TextTransparency = 1 }, 0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-    tween(Underline, { Size = UDim2.new(0, 0, 0, 3), Position = UDim2.new(0.5, 0, 0, 38) }, 0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-    task.wait(0.7)
-
-    DisclaimerLabel.Visible = true
-    DisclaimerLabel.Position = UDim2.new(0, 0, 0, 110)
-    DisclaimerLabel.TextTransparency = 1
-    tween(DisclaimerLabel, {
-        Position = UDim2.new(0, 0, 0, 90),
-        TextTransparency = 0,
-    }, 0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-    task.wait(0.4)
-
-    ContinueButton.Visible = true
-    ContinueButton.Position = UDim2.new(0.5, 0, 0, 300)
-    tween(ContinueButton, {
-        Position = UDim2.new(0.5, 0, 0, 280),
-        BackgroundTransparency = 0,
-        TextTransparency = 0,
-    }, 0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-    tween(ContinueStroke, { Transparency = 0.1 }, 0.45)
-
-    startCountdown()
-end)
-
-IntroFinished.Event:Wait()
-
-tween(DisclaimerLabel, { TextTransparency = 1 }, 0.35)
-tween(ContinueButton, { TextTransparency = 1, BackgroundTransparency = 1 }, 0.35)
-tween(ContinueStroke, { Transparency = 1 }, 0.35)
-task.wait(0.35)
-
-tween(IntroFrame, { BackgroundTransparency = 1 }, 0.6, Enum.EasingStyle.Sine)
-task.wait(0.6)
-IntroScreenGui:Destroy()
+local CountdownLabel = create("TextLabel", {
+    Text = "10",
+    Font = Enum.Font.GothamBlack,
+    TextSize = 32,
+    TextColor3 = Theme.Accent,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0, 0, 0, 140),
+    Size = UDim2.new(1, 0, 0, 40),
+    ZIndex = 42,
+})
+CountdownLabel.Parent = WarningBox
 
 ------------------------------------------------------------
--- 2) MAIN SCRIPT & UI (WINDUI)
+-- EXECUTOR & SCRIPT CORE ENGINE
 ------------------------------------------------------------
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local Roles = {}
+local MurdererPlayer = nil
+local SheriffPlayer = nil
 
-pcall(function()
-    WindUI:SetTheme("Midnight")
-end)
-
-WindUI:SetFont("rbxasset://fonts/families/FredokaOne.json")
-
--- Window Setup
-local Window = WindUI:CreateWindow({
-    Title = "UguzHub V3",
-    Author = "Summer Event Update :)",
-    Folder = "uguzhub_v3",
-    NewElements = true,
-    HideSearchBar = false,
-    OpenButton = {
-        Title = "Open!",
-        CornerRadius = UDim.new(0, 10),
-        StrokeThickness = 12,
-        Enabled = true,
-        Draggable = true,
-        OnlyMobile = false,
-        Scale = 1.2,
-        Position = UDim2.new(0, 20, 1, -70),
-        Color = ColorSequence.new(Color3.fromRGB(255, 105, 180), Color3.fromRGB(180, 0, 255))
-    },
-    Topbar = { Height = 44, ButtonsType = "Mac", TagOffset = 56 },
-})
-
-Window:SetToggleKey(Enum.KeyCode.RightShift)
-
--- SAĞ YUKARI KÜÇÜLTME/BÜYÜTME (-) BUTONU ENTEGRASYONU
-task.defer(function()
-    local coreUI = game:GetService("CoreGui")
-    local winFrame = coreUI:FindFirstChild("WindUI", true) or coreUI:FindFirstChild("UguzHub V3", true)
-    if winFrame then
-        local topbar = winFrame:FindFirstChild("Topbar", true) or winFrame:FindFirstChild("Header", true)
-        if topbar then
-            local minimizeBtn = Instance.new("TextButton")
-            minimizeBtn.Name = "MinimizeButton"
-            minimizeBtn.Size = UDim2.new(0, 28, 0, 28)
-            minimizeBtn.Position = UDim2.new(1, -38, 0.5, -14)
-            minimizeBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-            minimizeBtn.Text = "-"
-            minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            minimizeBtn.TextSize = 20
-            minimizeBtn.Font = Enum.Font.GothamBold
-            minimizeBtn.ZIndex = 100
-            minimizeBtn.Parent = topbar
-
-            local cornerBtn = Instance.new("UICorner")
-            cornerBtn.CornerRadius = UDim.new(0, 6)
-            cornerBtn.Parent = minimizeBtn
-
-            local isMinimized = false
-            local originalSize = winFrame.Size
-
-            minimizeBtn.MouseButton1Click:Connect(function()
-                isMinimized = not isMinimized
-                if isMinimized then
-                    originalSize = winFrame.Size
-                    winFrame:TweenSize(UDim2.new(winFrame.Size.X.Scale, winFrame.Size.X.Offset, 0, 44), "Out", "Quint", 0.3, true)
-                    minimizeBtn.Text = "+"
-                else
-                    winFrame:TweenSize(originalSize, "Out", "Quint", 0.3, true)
-                    minimizeBtn.Text = "-"
-                end
-            end)
-        end
-    end
-end)
-
--- Sections & Tabs
-local Sections = {
-    HomeSection = Window:Section({ Title = "Home", Opened = true }),
-    AutofarmSection = Window:Section({ Title = "Autofarm", Opened = true }),
-    DetectionSection = Window:Section({ Title = "Detection", Opened = true }),
-    CombatSection = Window:Section({ Title = "Combat", Opened = true }),
-    EspSection = Window:Section({ Title = "ESP", Opened = true }),
-    NewGodlies = Window:Section({ Title = "Event", Opened = true }),
-    RoundManagement = Window:Section({ Title = "Round Management", Opened = true }),
-    Halloween = Window:Section({ Title = "Items", Opened = true }),
-    AppearanceSection = Window:Section({ Title = "Appearance", Opened = true }),
-    Credits = Window:Section({ Title = "Credits", Opened = true }),
+local Config = {
+    ShotMurder = false,
+    LockMurder = false,
+    LockSheriff = false,
+    KillAll = false,
+    ESP_Enabled = true,
+    WalkSpeed = 16,
+    JumpPower = 50,
+    InfJump = false,
+    ButtonVisibility = {
+        ShotMurder = true,
+        LockMurder = true,
+        LockSheriff = true,
+        KillAll = true,
+    }
 }
 
-local Tabs = {
-    HomeTab = Sections.HomeSection:Tab({ Title = "Welcome", Icon = "home", Desc = "Get started with UguzHub V3", IconColor = Color3.fromHex("#FF1493") }),
-    FastestAutofarmTab = Sections.AutofarmSection:Tab({ Title = "Autofarm", Icon = "zap", Desc = "Collect coins automatically", IconColor = Color3.fromHex("#FF69B4") }),
-    AntiAFKTab = Sections.AutofarmSection:Tab({ Title = "AFK", Icon = "clock", Desc = "Stay active", IconColor = Color3.fromHex("#FF1493") }),
-    CoinDetectionTab = Sections.DetectionSection:Tab({ Title = "Coin Detection", Icon = "coins", Desc = "Track coins & auto-reset", IconColor = Color3.fromHex("#FFB6C1") }),
-    CombatTab = Sections.CombatSection:Tab({ Title = "Combat", Icon = "crosshair", Desc = "Aimbot & Combat tools", IconColor = Color3.fromHex("#DC143C") }),
-    EspTab = Sections.EspSection:Tab({ Title = "ESP", Icon = "eye", Desc = "ESP settings", IconColor = Color3.fromHex("#FF69B4") }),
-    EndRoundTab = Sections.RoundManagement:Tab({ Title = "End Round", Icon = "refresh-cw", Desc = "Fling controls", IconColor = Color3.fromHex("#E91E63") }),
-    Spawner = Sections.NewGodlies:Tab({ Title = "Item Spawner", Icon = "refresh-cw", Desc = "Spawn weapons", IconColor = Color3.fromHex("#FF1493") }),
-    CoinDuper = Sections.NewGodlies:Tab({ Title = "Coin Duper", Icon = "refresh-cw", Desc = "Duplicate coins", IconColor = Color3.fromHex("#FF69B4") }),
-    ServerCrasher = Sections.RoundManagement:Tab({ Title = "Crash Server", Icon = "refresh-cw", Desc = "Crash server", IconColor = Color3.fromHex("#DC143C") }),
-    BeachballsTab = Sections.Halloween:Tab({ Title = "Event Items", Icon = "gift", Desc = "Event coin dupe", IconColor = Color3.fromHex("#FF69B4") }),
-    ThemesTab = Sections.AppearanceSection:Tab({ Title = "Themes", Icon = "palette", Desc = "Switch UI theme", IconColor = Color3.fromHex("#E91E63") }),
-    DevelopersTab = Sections.Credits:Tab({ Title = "Developers", Icon = "info", Desc = "Credits", IconColor = Color3.fromHex("#FFC0CB") })
-}
-
-Tabs.HomeTab:Paragraph({ Title = "Welcome to UguzHub V3!", Desc = "Premium & Optimized script edition." })
-
--- MiniFling Function
-local function miniFling(Targets)
-    local AllBool = false
-    local GetPlayer = function(Name)
-        Name = Name:lower()
-        if Name == "all" or Name == "others" then AllBool = true; return end
-        for _,x in next, Players:GetPlayers() do
-            if x ~= LocalPlayer and (x.Name:lower():match("^"..Name) or x.DisplayName:lower():match("^"..Name)) then
-                return x
-            end
-        end
-    end
-
-    local SkidFling = function(TargetPlayer)
-        local Character = LocalPlayer.Character
-        local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-        local RootPart = Humanoid and Humanoid.RootPart
-        local TCharacter = TargetPlayer.Character
-        if not TCharacter then return end
-        local THumanoid = TCharacter:FindFirstChildOfClass("Humanoid")
-        local TRootPart = THumanoid and THumanoid.RootPart
-
-        if Character and Humanoid and RootPart and TRootPart then
-            getgenv().OldPos = RootPart.CFrame
-            game.Workspace.FallenPartsDestroyHeight = 0/0
-
-            local BV = Instance.new("BodyVelocity", RootPart)
-            BV.Velocity = Vector3.new(9e8, 9e8, 9e8)
-            BV.MaxForce = Vector3.new(1/0, 1/0, 1/0)
-
-            local Time = tick()
-            repeat
-                RootPart.CFrame = TRootPart.CFrame * CFrame.new(0, 1.5, 0)
-                RootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
-                task.wait()
-            until TRootPart.Velocity.Magnitude > 500 or not TargetPlayer.Character or THumanoid.Health <= 0 or tick() > Time + 2
-
-            BV:Destroy()
-            RootPart.CFrame = getgenv().OldPos
-            game.Workspace.FallenPartsDestroyHeight = -500
-        end
-    end
-
-    if Targets[1] then for _,x in next, Targets do GetPlayer(x) end end
-    if AllBool then
-        for _,x in next, Players:GetPlayers() do SkidFling(x) end
-    else
-        for _,x in next, Targets do
-            local tp = GetPlayer(x)
-            if tp and tp ~= LocalPlayer then SkidFling(tp) end
-        end
-    end
-end
-
--- MM2 Role Functions
-local roles, Murder, Sheriff, Hero = {}, nil, nil, nil
-local function UpdateRoles()
+-- Target ESP Detection
+local function UpdateGameRoles()
     local success, result = pcall(function()
-        return game:GetService("ReplicatedStorage"):FindFirstChild("GetPlayerData", true):InvokeServer()
+        return ReplicatedStorage:FindFirstChild("GetPlayerData", true):InvokeServer()
     end)
     if success and result then
-        roles = result
-        Murder, Sheriff, Hero = nil, nil, nil
-        for name, data in pairs(roles) do
-            if data.Role == "Murderer" then Murder = name
-            elseif data.Role == "Sheriff" then Sheriff = name
-            elseif data.Role == "Hero" then Hero = name end
+        Roles = result
+        MurdererPlayer = nil
+        SheriffPlayer = nil
+        for name, data in pairs(Roles) do
+            if data.Role == "Murderer" then
+                MurdererPlayer = Players:FindFirstChild(name)
+            elseif data.Role == "Sheriff" or data.Role == "Hero" then
+                SheriffPlayer = Players:FindFirstChild(name)
+            end
         end
     end
 end
 
-local function getMurderer()
-    UpdateRoles()
-    return Murder and Players:FindFirstChild(Murder) or nil
+-- ESP Rendering Engine
+local ESPHighlights = {}
+
+local function ClearESP()
+    for player, hl in pairs(ESPHighlights) do
+        if hl then hl:Destroy() end
+    end
+    table.clear(ESPHighlights)
 end
 
--- Target Lock & Shoot (Işınlanmadan)
-local Camera = workspace.CurrentCamera
-local Aimbot = { Settings = { Enabled = false, Prediction = 0.15, LockPart = "HumanoidRootPart" }, Locked = nil }
-local aimbotRunning = false
+local function ApplyESP()
+    if not Config.ESP_Enabled then
+        ClearESP()
+        return
+    end
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local char = player.Character
+            local hl = ESPHighlights[player] or Instance.new("Highlight")
+            hl.Name = "UguzHub_ESP"
+            hl.Adornee = char
+            hl.FillTransparency = 0.5
+            hl.OutlineTransparency = 0.1
+
+            if player == MurdererPlayer then
+                hl.FillColor = Color3.fromRGB(255, 30, 30)
+                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+            elseif player == SheriffPlayer then
+                hl.FillColor = Color3.fromRGB(30, 100, 255)
+                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+            else
+                hl.FillColor = Color3.fromRGB(50, 220, 50)
+                hl.OutlineColor = Color3.fromRGB(200, 200, 200)
+            end
+
+            hl.Parent = char
+            ESPHighlights[player] = hl
+        end
+    end
+end
+
+-- Combat Utilities (Raycast/Event Shoot without teleporting)
+local function GetShootRemote()
+    for _, desc in ipairs(ReplicatedStorage:GetDescendants()) do
+        if desc.Name == "Shoot" and desc:IsA("RemoteEvent") then
+            return desc
+        end
+    end
+    return nil
+end
+
+local function ShootTarget(targetPlayer)
+    if not targetPlayer or not targetPlayer.Character then return end
+    local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local myChar = LocalPlayer.Character
+    if not targetHRP or not myChar then return end
+
+    local remote = GetShootRemote()
+    if remote then
+        local originCF = myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.CFrame or CFrame.new()
+        -- Target lead calculation without moving position
+        local predictedPos = targetHRP.Position + (targetHRP.Velocity * 0.18)
+        remote:FireServer(originCF, CFrame.new(predictedPos))
+    end
+end
+
+-- AimLock Camera Control without teleporting
+local CurrentLockTarget = nil
 
 RunService.RenderStepped:Connect(function()
-    if aimbotRunning and Aimbot.Settings.Enabled then
-        if Aimbot.Locked and Aimbot.Locked.Character and Aimbot.Locked.Character:FindFirstChildOfClass("Humanoid") and Aimbot.Locked.Character.Humanoid.Health > 0 then
-            local part = Aimbot.Locked.Character:FindFirstChild(Aimbot.Settings.LockPart)
-            if part then
-                local pred = part.Position + part.Velocity * Aimbot.Settings.Prediction
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, pred)
-            end
-        else
-            Aimbot.Locked = nil
-        end
+    UpdateGameRoles()
+    ApplyESP()
+
+    -- Lock Target Handler
+    if CurrentLockTarget and CurrentLockTarget.Character and CurrentLockTarget.Character:FindFirstChild("HumanoidRootPart") then
+        local cam = workspace.CurrentCamera
+        local targetPos = CurrentLockTarget.Character.HumanoidRootPart.Position + (CurrentLockTarget.Character.HumanoidRootPart.Velocity * 0.15)
+        cam.CFrame = CFrame.new(cam.CFrame.Position, targetPos)
+    end
+
+    -- Character Modifications
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        hum.WalkSpeed = Config.WalkSpeed
+        hum.JumpPower = Config.JumpPower
     end
 end)
 
-local function ShootTarget(targetPlayer)
-    local char = LocalPlayer.Character
-    if not char or not targetPlayer or not targetPlayer.Character then return end
+-- Infinite Jump Action
+UserInputService.JumpRequest:Connect(function()
+    if Config.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
 
-    local gun = char:FindFirstChild("Gun") or LocalPlayer.Backpack:FindFirstChild("Gun")
-    if gun then gun.Parent = char end
+-- Fling Target System
+local function FlingPlayer(targetPlayer)
+    if not targetPlayer or not targetPlayer.Character then return end
+    local myChar = LocalPlayer.Character
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 
-    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("Shoot", true)
-    local targetPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if remote and targetPart then
-        local hitPos = targetPart.Position + targetPart.Velocity * Aimbot.Settings.Prediction
-        remote:FireServer(Camera.CFrame, CFrame.new(hitPos))
+    if myHRP and targetHRP then
+        local oldPos = myHRP.CFrame
+        local bv = Instance.new("BodyVelocity")
+        bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bv.Parent = myHRP
+
+        local start = tick()
+        while tick() - start < 1.5 do
+            if targetHRP and targetHRP.Parent then
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(math.random(-1,1), 0, math.random(-1,1))
+            end
+            task.wait()
+        end
+        bv:Destroy()
+        myHRP.CFrame = oldPos
     end
 end
 
----------------------------------------------------------
--- COMBAT TAB EKRAN BUTONLARI
----------------------------------------------------------
-Tabs.CombatTab:Section({ Title = "Screen Buttons Control" })
+------------------------------------------------------------
+-- MAIN WINDOW GUI (UGUZHUB V3)
+------------------------------------------------------------
+local MainFrame = create("Frame", {
+    Name = "MainFrame",
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.new(0, 480, 0, 320),
+    BackgroundColor3 = Theme.Background,
+    ClipsDescendants = true,
+    Visible = false,
+    ZIndex = 10,
+})
+corner(16).Parent = MainFrame
+stroke(Theme.Accent, 1.5).Parent = MainFrame
+MainFrame.Parent = ScreenGui
 
-local ScreenButtons = { KillAll = false, ShootMurder = false, LockMurder = false, LockSheriff = false }
-local KillAllBtn, ShootMurderBtn, LockMurderBtn, LockSheriffBtn
+-- Top Header
+local TopBar = create("Frame", {
+    Size = UDim2.new(1, 0, 0, 42),
+    BackgroundColor3 = Theme.Sidebar,
+    ZIndex = 11,
+})
+corner(16).Parent = TopBar
+TopBar.Parent = MainFrame
 
-local function UpdateButtonUI(btn, label, state)
-    if btn then btn:SetTitle(label .. (state and " - Active" or " - Inactive")) end
-end
+local HeaderTitle = create("TextLabel", {
+    Text = "UguzHub V3",
+    Font = Enum.Font.GothamBold,
+    TextSize = 16,
+    TextColor3 = Theme.Text,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0, 16, 0, 0),
+    Size = UDim2.new(0, 200, 1, 0),
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 12,
+})
+HeaderTitle.Parent = TopBar
 
-KillAllBtn = Tabs.CombatTab:Button({ Title = "Kill All - Inactive", Callback = function()
-    ScreenButtons.KillAll = not ScreenButtons.KillAll
-    UpdateButtonUI(KillAllBtn, "Kill All", ScreenButtons.KillAll)
-    if ScreenButtons.KillAll then miniFling({"all"}) end
-end })
+local CloseBtn = create("TextButton", {
+    Text = "X",
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    TextColor3 = Theme.SubText,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(1, -38, 0, 5),
+    Size = UDim2.new(0, 32, 0, 32),
+    ZIndex = 12,
+})
+CloseBtn.Parent = TopBar
 
-ShootMurderBtn = Tabs.CombatTab:Button({ Title = "Shoot Murder - Inactive", Callback = function()
-    ScreenButtons.ShootMurder = not ScreenButtons.ShootMurder
-    UpdateButtonUI(ShootMurderBtn, "Shoot Murder", ScreenButtons.ShootMurder)
-    if ScreenButtons.ShootMurder then ShootTarget(getMurderer()) end
-end })
+-- Open / Toggle Float Button
+local ToggleBtn = create("TextButton", {
+    Name = "UguzHub_Toggle",
+    Text = "UguzHub V3",
+    Font = Enum.Font.GothamBold,
+    TextSize = 13,
+    TextColor3 = Theme.Text,
+    BackgroundColor3 = Theme.Accent,
+    Position = UDim2.new(1, -120, 0, 20),
+    Size = UDim2.new(0, 100, 0, 36),
+    Visible = false,
+    ZIndex = 100,
+})
+corner(10).Parent = ToggleBtn
+stroke(Color3.fromRGB(255, 255, 255), 1).Parent = ToggleBtn
+ToggleBtn.Parent = ScreenGui
 
-LockMurderBtn = Tabs.CombatTab:Button({ Title = "Lock Murder - Inactive", Callback = function()
-    ScreenButtons.LockMurder = not ScreenButtons.LockMurder
-    UpdateButtonUI(LockMurderBtn, "Lock Murder", ScreenButtons.LockMurder)
-    aimbotRunning = ScreenButtons.LockMurder
-    Aimbot.Settings.Enabled = ScreenButtons.LockMurder
-    Aimbot.Locked = ScreenButtons.LockMurder and getMurderer() or nil
-end })
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    ToggleBtn.Visible = true
+end)
 
-LockSheriffBtn = Tabs.CombatTab:Button({ Title = "Lock Sheriff - Inactive", Callback = function()
-    ScreenButtons.LockSheriff = not ScreenButtons.LockSheriff
-    UpdateButtonUI(LockSheriffBtn, "Lock Sheriff", ScreenButtons.LockSheriff)
-    aimbotRunning = ScreenButtons.LockSheriff
-    Aimbot.Settings.Enabled = ScreenButtons.LockSheriff
-    if ScreenButtons.LockSheriff then
-        UpdateRoles()
-        if Sheriff then Aimbot.Locked = Players:FindFirstChild(Sheriff) end
-    else
-        Aimbot.Locked = nil
-    end
-end })
+ToggleBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    ToggleBtn.Visible = false
+end)
 
----------------------------------------------------------
--- EKRANDAKİ SÜRÜKLENEBİLİR & BOYUTLANDIRILABİLİR BUTONLAR
----------------------------------------------------------
-local CoreGui = game:GetService("CoreGui")
-local OverlayScreenGui = Instance.new("ScreenGui")
-OverlayScreenGui.Name = "UguzHub_OverlayUI"
-OverlayScreenGui.Parent = CoreGui
-_G.MainScreenUI = OverlayScreenGui
+-- Window Resizer (Bottom Right Corner)
+local ResizeHandle = create("TextButton", {
+    Text = "◢",
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    TextColor3 = Theme.SubText,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(1, -20, 1, -20),
+    Size = UDim2.new(0, 20, 0, 20),
+    ZIndex = 25,
+})
+ResizeHandle.Parent = MainFrame
 
-local function CreateResizableSquareButton(name, text, iconEmoji, position, onClickCallback)
-    local frame = Instance.new("Frame")
-    frame.Name = name .. "UI"
-    frame.Size = UDim2.new(0, 90, 0, 90)
-    frame.Position = position
-    frame.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
-    frame.BorderSizePixel = 0
-    frame.Active = true
-    frame.Parent = OverlayScreenGui
+do
+    local resizing = false
+    local startSize, startMouse
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = frame
-
-    local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(1, 0, 0.45, 0)
-    icon.Position = UDim2.new(0, 0, 0.08, 0)
-    icon.BackgroundTransparency = 1
-    icon.Text = iconEmoji
-    icon.TextSize = 26
-    icon.Parent = frame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -6, 0.35, 0)
-    label.Position = UDim2.new(0, 3, 0.55, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextScaled = true
-    label.Font = Enum.Font.SourceSansBold
-    label.Parent = frame
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = frame
-
-    -- Sürükleme Mantığı (Dragging)
-    local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
-
-    btn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
-        end
-    end)
-
-    btn.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-
-    -- Sağ Alt Küçültme/Büyütme Düğmesi (Resizer)
-    local resizer = Instance.new("TextButton")
-    resizer.Name = "Resizer"
-    resizer.Size = UDim2.new(0, 22, 0, 22)
-    resizer.Position = UDim2.new(1, -22, 1, -22)
-    resizer.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    resizer.BackgroundTransparency = 0.2
-    resizer.Text = "⇲"
-    resizer.TextColor3 = Color3.fromRGB(255, 255, 255)
-    resizer.TextSize = 14
-    resizer.ZIndex = 10
-    resizer.Parent = frame
-
-    local resizerCorner = Instance.new("UICorner")
-    resizerCorner.CornerRadius = UDim.new(0, 6)
-    resizerCorner.Parent = resizer
-
-    local resizing, resizerStartPos, resizerStartSize = false, nil, nil
-
-    resizer.InputBegan:Connect(function(input)
+    ResizeHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             resizing = true
-            resizerStartPos = input.Position
-            resizerStartSize = frame.Size
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then resizing = false end
-            end)
+            startSize = MainFrame.Size
+            startMouse = input.Position
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
         if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - resizerStartPos
-            local newWidth = math.max(60, resizerStartSize.X.Offset + delta.X)
-            local newHeight = math.max(60, resizerStartSize.Y.Offset + delta.Y)
-            frame.Size = UDim2.new(0, newWidth, 0, newHeight)
-            icon.TextSize = math.clamp(newHeight * 0.3, 14, 40)
+            local delta = input.Position - startMouse
+            local newX = math.clamp(startSize.X.Offset + delta.X, 360, 700)
+            local newY = math.clamp(startSize.Y.Offset + delta.Y, 260, 500)
+            MainFrame.Size = UDim2.new(0, newX, 0, newY)
         end
     end)
 
-    local state = false
-    btn.MouseButton1Up:Connect(function()
-        if not dragging and not resizing then
-            state = not state
-            frame.BackgroundColor3 = state and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(231, 76, 60)
-            onClickCallback(state)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            resizing = false
         end
     end)
 end
 
--- Ekran Üzerindeki Butonlar
-CreateResizableSquareButton("LockMurder", "Aimbot Murderer", "🎯", UDim2.new(0.05, 0, 0.35, 0), function(state)
-    ScreenButtons.LockMurder = state
-    UpdateButtonUI(LockMurderBtn, "Lock Murder", state)
-    aimbotRunning = state
-    Aimbot.Settings.Enabled = state
-    Aimbot.Locked = state and getMurderer() or nil
-end)
+-- Window Dragger
+do
+    local dragging = false
+    local dragStart, startPos
 
-CreateResizableSquareButton("LockSheriff", "Aimbot Sheriff", "🎯", UDim2.new(0.05, 105, 0.35, 0), function(state)
-    ScreenButtons.LockSheriff = state
-    UpdateButtonUI(LockSheriffBtn, "Lock Sheriff", state)
-    aimbotRunning = state
-    Aimbot.Settings.Enabled = state
-    if state then
-        UpdateRoles()
-        if Sheriff then Aimbot.Locked = Players:FindFirstChild(Sheriff) end
-    else
-        Aimbot.Locked = nil
+    TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+------------------------------------------------------------
+-- TAB NAVIGATION SYSTEM
+------------------------------------------------------------
+local Sidebar = create("Frame", {
+    Size = UDim2.new(0, 120, 1, -42),
+    Position = UDim2.new(0, 0, 0, 42),
+    BackgroundColor3 = Theme.Sidebar,
+    ZIndex = 11,
+})
+Sidebar.Parent = MainFrame
+
+local TabHolder = create("Frame", {
+    Size = UDim2.new(1, 0, 1, 0),
+    BackgroundTransparency = 1,
+    ZIndex = 12,
+})
+TabHolder.Parent = Sidebar
+
+create("UIListLayout", {
+    Padding = UDim.new(0, 4),
+    HorizontalAlignment = Enum.HorizontalAlignment.Center,
+    SortOrder = Enum.SortOrder.LayoutOrder,
+}).Parent = TabHolder
+
+local ContentFrame = create("Frame", {
+    Size = UDim2.new(1, -126, 1, -48),
+    Position = UDim2.new(0, 124, 0, 46),
+    BackgroundTransparency = 1,
+    ZIndex = 11,
+})
+ContentFrame.Parent = MainFrame
+
+local Tabs = {}
+
+local function CreateTab(name)
+    local tabBtn = create("TextButton", {
+        Text = name,
+        Font = Enum.Font.GothamMedium,
+        TextSize = 13,
+        TextColor3 = Theme.SubText,
+        BackgroundColor3 = Theme.Card,
+        Size = UDim2.new(0, 110, 0, 32),
+        AutoButtonColor = false,
+        ZIndex = 13,
+    })
+    corner(8).Parent = tabBtn
+
+    local page = create("ScrollingFrame", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        Visible = false,
+        ScrollBarThickness = 3,
+        ZIndex = 12,
+    })
+    page.Parent = ContentFrame
+
+    create("UIListLayout", {
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }).Parent = page
+
+    tabBtn.MouseButton1Click:Connect(function()
+        for _, t in pairs(Tabs) do
+            t.Btn.TextColor3 = Theme.SubText
+            t.Btn.BackgroundColor3 = Theme.Card
+            t.Page.Visible = false
+        end
+        tabBtn.TextColor3 = Theme.Text
+        tabBtn.BackgroundColor3 = Theme.Accent
+        page.Visible = true
+    end)
+
+    Tabs[name] = { Btn = tabBtn, Page = page }
+    tabBtn.Parent = TabHolder
+    return page
+end
+
+local CombatPage = CreateTab("Combat")
+local FunPage = CreateTab("Fun")
+
+------------------------------------------------------------
+-- COMBAT TAB ELEMENTS
+------------------------------------------------------------
+local ButtonsContainer = {}
+
+local function CreateCombatButton(id, text, callback)
+    local btn = create("TextButton", {
+        Text = text,
+        Font = Enum.Font.GothamBold,
+        TextSize = 13,
+        TextColor3 = Theme.Text,
+        BackgroundColor3 = Theme.Card,
+        Size = UDim2.new(1, -8, 0, 36),
+        ZIndex = 14,
+    })
+    corner(8).Parent = btn
+    stroke().Parent = btn
+    btn.Parent = CombatPage
+
+    btn.MouseButton1Click:Connect(callback)
+    ButtonsContainer[id] = btn
+    return btn
+end
+
+-- 1. Shot Murder
+CreateCombatButton("ShotMurder", "Shot Murder", function()
+    if MurdererPlayer then
+        ShootTarget(MurdererPlayer)
     end
 end)
 
-CreateResizableSquareButton("KillAll", "Kill All", "🔪", UDim2.new(0.05, 210, 0.35, 0), function(state)
-    ScreenButtons.KillAll = state
-    UpdateButtonUI(KillAllBtn, "Kill All", state)
-    if state then miniFling({"all"}) end
+-- 2. Lock Murder
+local lockM = false
+CreateCombatButton("LockMurder", "Lock Murder [OFF]", function()
+    lockM = not lockM
+    if lockM then
+        CurrentLockTarget = MurdererPlayer
+        ButtonsContainer["LockMurder"].Text = "Lock Murder [ON]"
+        ButtonsContainer["LockMurder"].BackgroundColor3 = Theme.Accent
+    else
+        CurrentLockTarget = nil
+        ButtonsContainer["LockMurder"].Text = "Lock Murder [OFF]"
+        ButtonsContainer["LockMurder"].BackgroundColor3 = Theme.Card
+        end
+        end)
+
+-- 3. Lock Sheriff
+local lockS = false
+CreateCombatButton("LockSheriff", "Lock Sheriff [OFF]", function()
+    lockS = not lockS
+    if lockS then
+        CurrentLockTarget = SheriffPlayer
+        ButtonsContainer["LockSheriff"].Text = "Lock Sheriff [ON]"
+        ButtonsContainer["LockSheriff"].BackgroundColor3 = Theme.Accent
+    else
+        CurrentLockTarget = nil
+        ButtonsContainer["LockSheriff"].Text = "Lock Sheriff [OFF]"
+        ButtonsContainer["LockSheriff"].BackgroundColor3 = Theme.Card
+    end
 end)
 
-CreateResizableSquareButton("ShootMurder", "Shoot Murder", "🔫", UDim2.new(0.05, 315, 0.35, 0), function(state)
-    ScreenButtons.ShootMurder = state
-    UpdateButtonUI(ShootMurderBtn, "Shoot Murder", state)
-    if state then ShootTarget(getMurderer()) end
+-- 4. Kill All
+CreateCombatButton("KillAll", "Kill All", function()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            ShootTarget(p)
+        end
+    end
+end)
+
+-- Combat Visibility Settings Section
+local VisTitle = create("TextLabel", {
+    Text = "Button Visibility Settings",
+    Font = Enum.Font.GothamBold,
+    TextSize = 13,
+    TextColor3 = Theme.SubText,
+    BackgroundTransparency = 1,
+    Size = UDim2.new(1, 0, 0, 24),
+    ZIndex = 14,
+})
+VisTitle.Parent = CombatPage
+
+local function CreateVisibilityToggle(id, labelText)
+    local frame = create("Frame", {
+        Size = UDim2.new(1, -8, 0, 30),
+        BackgroundColor3 = Theme.Sidebar,
+        ZIndex = 14,
+    })
+    corner(6).Parent = frame
+    frame.Parent = CombatPage
+
+    create("TextLabel", {
+        Text = labelText,
+        Font = Enum.Font.GothamMedium,
+        TextSize = 12,
+        TextColor3 = Theme.Text,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 10, 0, 0),
+        Size = UDim2.new(0.6, 0, 1, 0),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 15,
+    }).Parent = frame
+
+    local tog = create("TextButton", {
+        Text = "VISIBLE",
+        Font = Enum.Font.GothamBold,
+        TextSize = 10,
+        TextColor3 = Theme.Green,
+        BackgroundColor3 = Theme.Card,
+        Position = UDim2.new(1, -75, 0, 4),
+        Size = UDim2.new(0, 65, 0, 22),
+        ZIndex = 15,
+    })
+    corner(4).Parent = tog
+    tog.Parent = frame
+
+    tog.MouseButton1Click:Connect(function()
+        Config.ButtonVisibility[id] = not Config.ButtonVisibility[id]
+        local isVis = Config.ButtonVisibility[id]
+        tog.Text = isVis and "VISIBLE" or "HIDDEN"
+        tog.TextColor3 = isVis and Theme.Green or Theme.Red
+        if ButtonsContainer[id] then
+            ButtonsContainer[id].Visible = isVis
+        end
+    end)
+end
+
+CreateVisibilityToggle("ShotMurder", "Shot Murder")
+CreateVisibilityToggle("LockMurder", "Lock Murder")
+CreateVisibilityToggle("LockSheriff", "Lock Sheriff")
+CreateVisibilityToggle("KillAll", "Kill All")
+
+------------------------------------------------------------
+-- FUN TAB ELEMENTS (ENGLISH ONLY)
+------------------------------------------------------------
+local function CreateFunToggle(labelText, defaultState, callback)
+    local frame = create("Frame", {
+        Size = UDim2.new(1, -8, 0, 36),
+        BackgroundColor3 = Theme.Card,
+        ZIndex = 14,
+    })
+    corner(8).Parent = frame
+    frame.Parent = FunPage
+
+    create("TextLabel", {
+        Text = labelText,
+        Font = Enum.Font.GothamBold,
+        TextSize = 13,
+        TextColor3 = Theme.Text,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, 0),
+        Size = UDim2.new(0.6, 0, 1, 0),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 15,
+    }).Parent = frame
+
+    local tog = create("TextButton", {
+        Text = defaultState and "ON" or "OFF",
+        Font = Enum.Font.GothamBold,
+        TextSize = 11,
+        TextColor3 = defaultState and Theme.Green or Theme.Red,
+        BackgroundColor3 = Theme.Sidebar,
+        Position = UDim2.new(1, -60, 0, 6),
+        Size = UDim2.new(0, 50, 0, 24),
+        ZIndex = 15,
+    })
+    corner(6).Parent = tog
+    tog.Parent = frame
+
+    local state = defaultState
+    tog.MouseButton1Click:Connect(function()
+        state = not state
+        tog.Text = state and "ON" or "OFF"
+        tog.TextColor3 = state and Theme.Green or Theme.Red
+        callback(state)
+    end)
+end
+
+-- 1. Jump Power (85)
+CreateFunToggle("High Jump (85)", false, function(active)
+    Config.JumpPower = active and 85 or 50
+end)
+
+-- 2. Speed Walk (30)
+CreateFunToggle("Fast Walk (30)", false, function(active)
+    Config.WalkSpeed = active and 30 or 16
+end)
+
+-- 3. Infinite Jump
+CreateFunToggle("Infinite Jump", false, function(active)
+    Config.InfJump = active
+end)
+
+-- 4. Fling Murderer
+local flingMBtn = create("TextButton", {
+    Text = "Fling Murderer",
+    Font = Enum.Font.GothamBold,
+    TextSize = 13,
+    TextColor3 = Theme.Text,
+    BackgroundColor3 = Theme.Card,
+    Size = UDim2.new(1, -8, 0, 36),
+    ZIndex = 14,
+})
+corner(8).Parent = flingMBtn
+stroke().Parent = flingMBtn
+flingMBtn.Parent = FunPage
+flingMBtn.MouseButton1Click:Connect(function()
+    if MurdererPlayer then
+        FlingPlayer(MurdererPlayer)
+    end
+end)
+
+-- 5. Fling Sheriff
+local flingSBtn = create("TextButton", {
+    Text = "Fling Sheriff",
+    Font = Enum.Font.GothamBold,
+    TextSize = 13,
+    TextColor3 = Theme.Text,
+    BackgroundColor3 = Theme.Card,
+    Size = UDim2.new(1, -8, 0, 36),
+    ZIndex = 14,
+})
+corner(8).Parent = flingSBtn
+stroke().Parent = flingSBtn
+flingSBtn.Parent = FunPage
+flingSBtn.MouseButton1Click:Connect(function()
+    if SheriffPlayer then
+        FlingPlayer(SheriffPlayer)
+    end
+end)
+
+-- Set Default Active Tab
+Tabs["Combat"].Btn.TextColor3 = Theme.Text
+Tabs["Combat"].Btn.BackgroundColor3 = Theme.Accent
+Tabs["Combat"].Page.Visible = true
+
+------------------------------------------------------------
+-- FLOW CONTROL TIMERS
+------------------------------------------------------------
+-- STEP 1: Intro Animation (4 Seconds)
+task.spawn(function()
+    tween(TitleLabel, { TextTransparency = 0 }, 0.8)
+    tween(VersionTag, { TextTransparency = 0 }, 0.8)
+    task.wait(0.2)
+    tween(AnimatedBar, { Size = UDim2.new(0, 200, 0, 4) }, 1.2, Enum.EasingStyle.Quart)
+
+    task.wait(4.0) -- Full 4 second Intro Duration
+
+    -- Fade Out Intro
+    tween(IntroFrame, { BackgroundTransparency = 1 }, 0.5)
+    tween(TitleLabel, { TextTransparency = 1 }, 0.4)
+    tween(VersionTag, { TextTransparency = 1 }, 0.4)
+    tween(AnimatedBar, { BackgroundTransparency = 1 }, 0.4)
+    task.wait(0.5)
+    IntroFrame.Visible = false
+
+    -- STEP 2: Executor Warning Screen (10 Seconds)
+    WarningFrame.Visible = true
+    tween(WarningFrame, { BackgroundTransparency = 0.2 }, 0.4)
+
+    for i = 10, 1, -1 do
+        CountdownLabel.Text = tostring(i)
+        task.wait(1.0)
+    end
+
+    -- Fade Out Warning
+    tween(WarningFrame, { BackgroundTransparency = 1 }, 0.5)
+    task.wait(0.5)
+    WarningFrame.Visible = false
+
+    -- STEP 3: Main Menu Launch
+    MainFrame.Visible = true
+    MainFrame.Size = UDim2.new(0, 380, 0, 240)
+    tween(MainFrame, { Size = UDim2.new(0, 480, 0, 320) }, 0.4, Enum.EasingStyle.Back)
 end)
