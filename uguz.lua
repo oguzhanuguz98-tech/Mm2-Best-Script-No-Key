@@ -1,4 +1,5 @@
-    UguzHub V3 - ROBLOX LUAU SCRIPT
+--[[
+    UguzHub V3 - ROBLOX LUAU SCRIPT (FIXED & OPTIMIZED)
     MM2 / GAME UTILITY - FULL INTEGRATED SCRIPT
 --]]
 
@@ -63,7 +64,7 @@ local function tween(obj, props, duration, style, direction)
 end
 
 ------------------------------------------------------------
--- ROOT GUI CONTAINER
+-- ROOT GUI CONTAINER (SAFE PARENTING)
 ------------------------------------------------------------
 local ScreenGui = create("ScreenGui", {
     Name = "UguzHubV3_Main",
@@ -73,15 +74,21 @@ local ScreenGui = create("ScreenGui", {
     IgnoreGuiInset = true,
 })
 
-local function getGuiContainer()
-    local success, _ = pcall(function()
+-- Safe Parent Selection for Mobile Executors
+local parentSuccess = pcall(function()
+    if gethui then
+        ScreenGui.Parent = gethui()
+    elseif syn and syn.protect_gui then
+        syn.protect_gui(ScreenGui)
         ScreenGui.Parent = CoreGui
-    end)
-    if not success then
-        ScreenGui.Parent = PlayerGui
+    else
+        ScreenGui.Parent = CoreGui
     end
+end)
+
+if not parentSuccess or not ScreenGui.Parent then
+    ScreenGui.Parent = PlayerGui
 end
-getGuiContainer()
 
 ------------------------------------------------------------
 -- SCREEN 1: INTRO ANIMATION (4 SECONDS)
@@ -214,7 +221,7 @@ local CountdownLabel = create("TextLabel", {
 CountdownLabel.Parent = WarningBox
 
 ------------------------------------------------------------
--- EXECUTOR & SCRIPT CORE ENGINE
+-- EXECUTOR & SCRIPT CORE ENGINE (SAFE CALLS)
 ------------------------------------------------------------
 local Roles = {}
 local MurdererPlayer = nil
@@ -237,23 +244,28 @@ local Config = {
     }
 }
 
--- Target ESP Detection
+-- Safe Role Fetcher
 local function UpdateGameRoles()
-    local success, result = pcall(function()
-        return ReplicatedStorage:FindFirstChild("GetPlayerData", true):InvokeServer()
-    end)
-    if success and result then
-        Roles = result
-        MurdererPlayer = nil
-        SheriffPlayer = nil
-        for name, data in pairs(Roles) do
-            if data.Role == "Murderer" then
-                MurdererPlayer = Players:FindFirstChild(name)
-            elseif data.Role == "Sheriff" or data.Role == "Hero" then
-                SheriffPlayer = Players:FindFirstChild(name)
+    pcall(function()
+        local getPlayerData = ReplicatedStorage:FindFirstChild("GetPlayerData", true)
+        if getPlayerData and getPlayerData:IsA("RemoteFunction") then
+            local result = getPlayerData:InvokeServer()
+            if type(result) == "table" then
+                Roles = result
+                MurdererPlayer = nil
+                SheriffPlayer = nil
+                for name, data in pairs(Roles) do
+                    if type(data) == "table" and data.Role then
+                        if data.Role == "Murderer" then
+                            MurdererPlayer = Players:FindFirstChild(name)
+                        elseif data.Role == "Sheriff" or data.Role == "Hero" then
+                            SheriffPlayer = Players:FindFirstChild(name)
+                        end
+                    end
+                end
             end
         end
-    end
+    end)
 end
 
 -- ESP Rendering Engine
@@ -261,7 +273,7 @@ local ESPHighlights = {}
 
 local function ClearESP()
     for player, hl in pairs(ESPHighlights) do
-        if hl then hl:Destroy() end
+        if hl and hl.Parent then hl:Destroy() end
     end
     table.clear(ESPHighlights)
 end
@@ -275,7 +287,12 @@ local function ApplyESP()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local char = player.Character
-            local hl = ESPHighlights[player] or Instance.new("Highlight")
+            local hl = ESPHighlights[player]
+            if not hl or not hl.Parent then
+                hl = Instance.new("Highlight")
+                ESPHighlights[player] = hl
+            end
+
             hl.Name = "UguzHub_ESP"
             hl.Adornee = char
             hl.FillTransparency = 0.5
@@ -293,12 +310,11 @@ local function ApplyESP()
             end
 
             hl.Parent = char
-            ESPHighlights[player] = hl
         end
     end
 end
 
--- Combat Utilities (Raycast/Event Shoot without teleporting)
+-- Combat Utilities
 local function GetShootRemote()
     for _, desc in ipairs(ReplicatedStorage:GetDescendants()) do
         if desc.Name == "Shoot" and desc:IsA("RemoteEvent") then
@@ -316,43 +332,52 @@ local function ShootTarget(targetPlayer)
 
     local remote = GetShootRemote()
     if remote then
-        local originCF = myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.CFrame or CFrame.new()
-        -- Target lead calculation without moving position
+        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+        local originCF = myHRP and myHRP.CFrame or CFrame.new()
         local predictedPos = targetHRP.Position + (targetHRP.Velocity * 0.18)
         remote:FireServer(originCF, CFrame.new(predictedPos))
     end
 end
 
--- AimLock Camera Control without teleporting
+-- AimLock Camera Control
 local CurrentLockTarget = nil
 
 RunService.RenderStepped:Connect(function()
-    UpdateGameRoles()
-    ApplyESP()
+    pcall(function()
+        UpdateGameRoles()
+        ApplyESP()
 
-    -- Lock Target Handler
-    if CurrentLockTarget and CurrentLockTarget.Character and CurrentLockTarget.Character:FindFirstChild("HumanoidRootPart") then
-        local cam = workspace.CurrentCamera
-        local targetPos = CurrentLockTarget.Character.HumanoidRootPart.Position + (CurrentLockTarget.Character.HumanoidRootPart.Velocity * 0.15)
-        cam.CFrame = CFrame.new(cam.CFrame.Position, targetPos)
-    end
+        if CurrentLockTarget and CurrentLockTarget.Character and CurrentLockTarget.Character:FindFirstChild("HumanoidRootPart") then
+            local cam = workspace.CurrentCamera
+            if cam then
+                local targetPos = CurrentLockTarget.Character.HumanoidRootPart.Position + (CurrentLockTarget.Character.HumanoidRootPart.Velocity * 0.15)
+                cam.CFrame = CFrame.new(cam.CFrame.Position, targetPos)
+            end
+        end
 
-    -- Character Modifications
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        hum.WalkSpeed = Config.WalkSpeed
-        hum.JumpPower = Config.JumpPower
-    end
+        if LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = Config.WalkSpeed
+                hum.JumpPower = Config.JumpPower
+            end
+        end
+    end)
 end)
 
--- Infinite Jump Action
+-- Infinite Jump
 UserInputService.JumpRequest:Connect(function()
-    if Config.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
-    end
+    pcall(function()
+        if Config.InfJump and LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end)
 end)
 
--- Fling Target System
+-- Fling System
 local function FlingPlayer(targetPlayer)
     if not targetPlayer or not targetPlayer.Character then return end
     local myChar = LocalPlayer.Character
@@ -379,7 +404,7 @@ local function FlingPlayer(targetPlayer)
 end
 
 ------------------------------------------------------------
--- MAIN WINDOW GUI (UGUZHUB V3)
+-- MAIN WINDOW GUI
 ------------------------------------------------------------
 local MainFrame = create("Frame", {
     Name = "MainFrame",
@@ -456,7 +481,7 @@ ToggleBtn.MouseButton1Click:Connect(function()
     ToggleBtn.Visible = false
 end)
 
--- Window Resizer (Bottom Right Corner)
+-- Window Resizer
 local ResizeHandle = create("TextButton", {
     Text = "◢",
     Font = Enum.Font.GothamBold,
@@ -623,7 +648,9 @@ local function CreateCombatButton(id, text, callback)
     stroke().Parent = btn
     btn.Parent = CombatPage
 
-    btn.MouseButton1Click:Connect(callback)
+    btn.MouseButton1Click:Connect(function()
+        pcall(callback)
+    end)
     ButtonsContainer[id] = btn
     return btn
 end
@@ -647,8 +674,8 @@ CreateCombatButton("LockMurder", "Lock Murder [OFF]", function()
         CurrentLockTarget = nil
         ButtonsContainer["LockMurder"].Text = "Lock Murder [OFF]"
         ButtonsContainer["LockMurder"].BackgroundColor3 = Theme.Card
-        end
-        end)
+    end
+end)
 
 -- 3. Lock Sheriff
 local lockS = false
@@ -737,7 +764,7 @@ CreateVisibilityToggle("LockSheriff", "Lock Sheriff")
 CreateVisibilityToggle("KillAll", "Kill All")
 
 ------------------------------------------------------------
--- FUN TAB ELEMENTS (ENGLISH ONLY)
+-- FUN TAB ELEMENTS
 ------------------------------------------------------------
 local function CreateFunToggle(labelText, defaultState, callback)
     local frame = create("Frame", {
@@ -778,16 +805,16 @@ local function CreateFunToggle(labelText, defaultState, callback)
         state = not state
         tog.Text = state and "ON" or "OFF"
         tog.TextColor3 = state and Theme.Green or Theme.Red
-        callback(state)
+        pcall(callback, state)
     end)
 end
 
--- 1. Jump Power (85)
+-- 1. Jump Power
 CreateFunToggle("High Jump (85)", false, function(active)
     Config.JumpPower = active and 85 or 50
 end)
 
--- 2. Speed Walk (30)
+-- 2. Speed Walk
 CreateFunToggle("Fast Walk (30)", false, function(active)
     Config.WalkSpeed = active and 30 or 16
 end)
@@ -843,16 +870,14 @@ Tabs["Combat"].Page.Visible = true
 ------------------------------------------------------------
 -- FLOW CONTROL TIMERS
 ------------------------------------------------------------
--- STEP 1: Intro Animation (4 Seconds)
 task.spawn(function()
     tween(TitleLabel, { TextTransparency = 0 }, 0.8)
     tween(VersionTag, { TextTransparency = 0 }, 0.8)
     task.wait(0.2)
     tween(AnimatedBar, { Size = UDim2.new(0, 200, 0, 4) }, 1.2, Enum.EasingStyle.Quart)
 
-    task.wait(4.0) -- Full 4 second Intro Duration
+    task.wait(4.0)
 
-    -- Fade Out Intro
     tween(IntroFrame, { BackgroundTransparency = 1 }, 0.5)
     tween(TitleLabel, { TextTransparency = 1 }, 0.4)
     tween(VersionTag, { TextTransparency = 1 }, 0.4)
@@ -860,7 +885,6 @@ task.spawn(function()
     task.wait(0.5)
     IntroFrame.Visible = false
 
-    -- STEP 2: Executor Warning Screen (10 Seconds)
     WarningFrame.Visible = true
     tween(WarningFrame, { BackgroundTransparency = 0.2 }, 0.4)
 
@@ -869,12 +893,10 @@ task.spawn(function()
         task.wait(1.0)
     end
 
-    -- Fade Out Warning
     tween(WarningFrame, { BackgroundTransparency = 1 }, 0.5)
     task.wait(0.5)
     WarningFrame.Visible = false
 
-    -- STEP 3: Main Menu Launch
     MainFrame.Visible = true
     MainFrame.Size = UDim2.new(0, 380, 0, 240)
     tween(MainFrame, { Size = UDim2.new(0, 480, 0, 320) }, 0.4, Enum.EasingStyle.Back)
